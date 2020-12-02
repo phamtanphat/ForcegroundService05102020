@@ -7,6 +7,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -14,11 +15,16 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import java.util.Random;
+
 public class MyService extends Service {
 
     NotificationManager mNotificationManager;
     Notification mNotification;
     String CHANNEL_ID = "MY_CHANNEL";
+    int mProgress = 0;
+    Random mRandom;
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -28,14 +34,33 @@ public class MyService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        mRandom = new Random();
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mNotification = createNotification(this,CHANNEL_ID);
+        mNotification = createNotification(this, CHANNEL_ID, mProgress);
         startForeground(1, mNotification);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_REDELIVER_INTENT;
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (mProgress < 100) {
+                    try {
+                        mProgress += mRandom.nextInt(10) + 1;
+                        mNotification = createNotification(getApplicationContext(), CHANNEL_ID, mProgress);
+                        mNotificationManager.notify(1, mNotification);
+                    } catch (Exception e) {
+                        Log.d("BBB", e.getMessage());
+                    }
+                    handler.postDelayed(this::run,1000);
+                }else{
+                    stopSelf();
+                }
+            }
+        },1000);
+        return START_NOT_STICKY;
     }
 
     @Override
@@ -43,14 +68,15 @@ public class MyService extends Service {
         super.onDestroy();
         Toast.makeText(this, "onDestroy", Toast.LENGTH_SHORT).show();
     }
-    private Notification createNotification(Context context , String channelId){
+
+    private Notification createNotification(Context context, String channelId, int progress) {
         NotificationCompat.Builder builder =
                 new NotificationCompat
                         .Builder(context, channelId)
                         .setSmallIcon(R.mipmap.ic_launcher)
                         .setShowWhen(true)
-                        .setContentTitle("Thong bao")
-                        .setContentText("Service running");
+                        .setContentTitle("Down load")
+                        .setProgress(100, progress, false);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel notificationChannel = new NotificationChannel(
@@ -62,6 +88,5 @@ public class MyService extends Service {
             mNotificationManager.createNotificationChannel(notificationChannel);
         }
         return builder.build();
-
     }
 }
