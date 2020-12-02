@@ -3,6 +3,7 @@ package com.example.forcegroundservice05102020;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -54,12 +55,12 @@ public class MyService extends Service {
                     } catch (Exception e) {
                         Log.d("BBB", e.getMessage());
                     }
-                    handler.postDelayed(this::run,1000);
-                }else{
+                    handler.postDelayed(this::run, 1000);
+                } else {
                     stopSelf();
                 }
             }
-        },1000);
+        }, 1000);
         return START_NOT_STICKY;
     }
 
@@ -70,12 +71,25 @@ public class MyService extends Service {
     }
 
     private Notification createNotification(Context context, String channelId, int progress) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(
+                        context,
+                        123,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+
+
         NotificationCompat.Builder builder =
                 new NotificationCompat
                         .Builder(context, channelId)
                         .setSmallIcon(R.mipmap.ic_launcher)
                         .setShowWhen(true)
                         .setContentTitle("Down load")
+                        .addAction(R.mipmap.ic_launcher, "Open app" , pendingIntent)
                         .setProgress(100, progress, false);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
